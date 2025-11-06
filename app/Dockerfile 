@@ -1,7 +1,10 @@
 FROM gradle:8.7-jdk21
 
+WORKDIR /app
+
 COPY . .
 
 RUN gradle installDist
+RUN chmod +x ./build/install/app/bin/app
 
 CMD ["./build/install/app/bin/app"]
