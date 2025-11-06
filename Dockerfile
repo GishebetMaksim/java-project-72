@@ -2,10 +2,10 @@ FROM gradle:8.7-jdk21
 
 WORKDIR /app
 
-COPY . .
+COPY app .
 
-RUN ./gradlew clean build installDist
+RUN ./gradlew clean installDist
 
 RUN chmod +x build/install/app/bin/app
 
-CMD ["./gradlew", "run"]
+CMD ["./build/install/app/bin/app"]
