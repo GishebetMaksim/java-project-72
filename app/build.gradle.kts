@@ -30,7 +30,7 @@ dependencies {
     implementation("io.javalin:javalin:6.6.0")
     implementation("io.javalin:javalin-bundle:6.6.0")
     implementation("io.javalin:javalin-rendering:6.6.0")
-    implementation("org.postgresql:postgresql:42.7.3'")
+    implementation("org.postgresql:postgresql:42.7.3")
 
     testImplementation("org.assertj:assertj-core:3.27.3")
     testImplementation(platform("org.junit:junit-bom:5.12.2"))
