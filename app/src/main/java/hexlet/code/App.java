@@ -5,25 +5,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.stream.Collectors;
 
+import hexlet.code.controller.UrlController;
 import hexlet.code.repository.BaseRepository;
+import hexlet.code.util.NamedRoutes;
 import io.javalin.rendering.template.JavalinJte;
-
-import static io.javalin.rendering.template.TemplateUtil.model;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import io.javalin.Javalin;
-import io.javalin.validation.ValidationException;
-import io.javalin.http.NotFoundResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import gg.jte.ContentType;
 import gg.jte.TemplateEngine;
-import io.javalin.rendering.template.JavalinJte;
 import gg.jte.resolve.ResourceCodeResolver;
 
 @Slf4j
@@ -75,7 +71,10 @@ public class App {
             config.fileRenderer(new JavalinJte(createTemplateEngine()));
         });
 
-        app.get("/", ctx -> ctx.render("index.jte"));
+        app.get(NamedRoutes.buildUrlPath(), UrlController::build);
+        app.post(NamedRoutes.urlsPath(), UrlController::create);
+        app.get(NamedRoutes.urlsPath(), UrlController::index);
+        app.get(NamedRoutes.urlPath("{id}"), UrlController::show);
 
         return app;
     }

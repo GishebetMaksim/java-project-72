@@ -4,6 +4,8 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 plugins {
     application
     checkstyle
+    jacoco
+    id("org.sonarqube") version "7.0.1.6134"
     id("io.freefair.lombok") version "8.13.1"
     id("com.github.ben-manes.versions") version "0.52.0"
     id("com.github.johnrengelman.shadow") version "8.1.1"
@@ -38,6 +40,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+
 tasks.test {
     useJUnitPlatform()
     // https://technology.lastminute.com/junit5-kotlin-and-gradle-dsl/
@@ -49,3 +52,6 @@ tasks.test {
         showStandardStreams = true
     }
 }
+
+tasks.jacocoTestReport { reports { xml.required.set(true) } }
+

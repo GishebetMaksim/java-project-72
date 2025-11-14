@@ -1,14 +1,43 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Fourth project</title>
+@import hexlet.code.dto.urls.UrlsPage
+@import hexlet.code.util.NamedRoutes
+@param UrlsPage page
 
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
-          <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
-    </head>
-    <body>
-        <p>Hello World</p>
-    </body>
-</html>
+@template.page(
+    page = page,
+    content = @`
+        <div class="mx-auto p-4 py-md-5">
+            <main>
+                <h1>Сайты</h1>
+
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Имя</th>
+                            <th>Последняя проверка</th>
+                            <th>Код ответа</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for(var url : page.getUrls())
+                            <tr>
+                                <td>
+                                    ${url.getId()}
+                                </td>
+                                <td>
+                                    <a href="${NamedRoutes.urlPath(url.getId())}">${url.getName()}</a>
+                                </td>
+                                <td>
+
+                                </td>
+                                <td>
+
+                                </td>
+                            </tr>
+                        @endfor
+                    </tbody>
+                </table>
+            </main>
+        </div>
+    `
+)
