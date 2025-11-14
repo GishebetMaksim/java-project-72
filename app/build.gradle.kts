@@ -55,3 +55,9 @@ tasks.test {
 
 tasks.jacocoTestReport { reports { xml.required.set(true) } }
 
+sonar {
+    properties {
+        property("sonar.projectKey", "GishebetMaksim_java-project-72")
+        property("sonar.organization", "gishebetmaksim")
+    }
+}
