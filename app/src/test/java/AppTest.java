@@ -3,6 +3,7 @@ import hexlet.code.model.Url;
 import hexlet.code.repository.BaseRepository;
 import hexlet.code.repository.UrlRepository;
 import io.javalin.Javalin;
+import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,6 +72,14 @@ public class AppTest {
 
             assertThat(response.code()).isEqualTo(200);
             assertThat(response.body().string()).contains("https://www.example.com");
+        });
+    }
+
+    @Test
+    void testUrlNotFound() throws Exception {
+        JavalinTest.test(app, (server, client) -> {
+            var response = client.get("/urls/999999");
+            assertThat(response.code()).isEqualTo(404);
         });
     }
 }
