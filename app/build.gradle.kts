@@ -33,10 +33,15 @@ dependencies {
     implementation("io.javalin:javalin-bundle:6.6.0")
     implementation("io.javalin:javalin-rendering:6.6.0")
     implementation("org.postgresql:postgresql:42.7.3")
+    implementation(platform("com.konghq:unirest-java-bom:4.5.1"))
+    implementation("com.konghq:unirest-java-core")
+    implementation("com.konghq:unirest-modules-jackson")
+    implementation("org.jsoup:jsoup:1.21.2")
 
     testImplementation("org.assertj:assertj-core:3.27.3")
     testImplementation(platform("org.junit:junit-bom:5.12.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("com.squareup.okhttp3:mockwebserver3:5.3.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

@@ -3,15 +3,23 @@ import hexlet.code.dto.BasePage;
 import hexlet.code.dto.urls.UrlPage;
 import hexlet.code.dto.urls.UrlsPage;
 import hexlet.code.model.Url;
+import hexlet.code.model.UrlCheck;
+import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
 import hexlet.code.util.UrlUtils;
 import io.javalin.http.Context;
 import hexlet.code.util.NamedRoutes;
 import io.javalin.http.NotFoundResponse;
+import kong.unirest.core.Unirest;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 
 import static io.javalin.rendering.template.TemplateUtil.model;
 
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class UrlController {
@@ -51,7 +59,16 @@ public class UrlController {
     public static void index(Context ctx) throws SQLException {
         String flash = ctx.consumeSessionAttribute("flash");
         String flashType = ctx.consumeSessionAttribute("flashType");
-        UrlsPage page = new UrlsPage(UrlRepository.getEntities());
+
+        List<Url> urls = UrlRepository.getEntities();
+        Map<Long, UrlCheck> latestChecks = new HashMap<>();
+
+        for (var url: urls) {
+            latestChecks.put(url.getId(), UrlCheckRepository.getLastUrlCheck(url.getId()));
+        }
+
+        UrlsPage page = new UrlsPage(urls, latestChecks);
+
         page.setFlash(flash);
         page.setFlashType(flashType);
 
@@ -62,7 +79,49 @@ public class UrlController {
         var id = ctx.pathParamAsClass("id", Long.class).get();
         var url = UrlRepository.find(id)
                 .orElseThrow(() -> new NotFoundResponse("Entity with id = " + id + " not found"));
-        var page = new UrlPage(url);
+
+        var urlChecksList = UrlCheckRepository.getUrlChecks(id);
+        var page = new UrlPage(url, urlChecksList);
+
+        String flash = ctx.consumeSessionAttribute("flash");
+        String flashType = ctx.consumeSessionAttribute("flashType");
+        page.setFlash(flash);
+        page.setFlashType(flashType);
+
         ctx.render("show.jte", model("page", page));
+    }
+
+    public static void check(Context ctx) throws SQLException {
+        var urlId = ctx.pathParamAsClass("id", Long.class).get();
+        var urlOptional = UrlRepository.find(urlId);
+
+        if (urlOptional.isEmpty()) {
+            ctx.status(404).result("URL not found");
+            return;
+        }
+
+        var urlName = urlOptional.get().getName();
+
+        var response = Unirest.get(urlName).asString();
+
+        var statusCode = response.getStatus();
+        var document = Jsoup.parse(response.getBody());
+
+        Element titleElement = document.selectFirst("title");
+        String title = titleElement != null ? titleElement.text() : "no title";
+
+        Element h1Element = document.selectFirst("h1");
+        String h1 = h1Element != null ? h1Element.text() : "";
+
+        Element metaDescription = document.selectFirst("meta[name=description]");
+        String description = metaDescription != null ? metaDescription.attr("content") : "";
+
+        var check = new UrlCheck(statusCode, title, h1, description, urlId);
+
+        UrlCheckRepository.save(check);
+
+        ctx.sessionAttribute("flash", "Страница успешно проверена");
+        ctx.sessionAttribute("flashType", "success");
+        ctx.redirect(NamedRoutes.urlPath(urlId));
     }
 }

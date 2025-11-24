@@ -1,8 +1,11 @@
 import hexlet.code.App;
 import hexlet.code.model.Url;
 import hexlet.code.repository.BaseRepository;
+import hexlet.code.repository.UrlCheckRepository;
 import hexlet.code.repository.UrlRepository;
 import io.javalin.Javalin;
+import mockwebserver3.MockResponse;
+import mockwebserver3.MockWebServer;
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,10 +78,60 @@ public class AppTest {
     }
 
     @Test
-    void testUrlNotFound() throws Exception {
+    public void testUrlNotFound() throws Exception {
         JavalinTest.test(app, (server, client) -> {
             var response = client.get("/urls/999999");
             assertThat(response.code()).isEqualTo(404);
         });
+    }
+
+    @Test
+    public void testCheck() throws Exception {
+        var mockServer = new MockWebServer();
+
+        mockServer.enqueue(
+                new MockResponse.Builder()
+                        .code(200)
+                        .body("""
+                <html>
+                    <head>
+                        <title>Hello</title>
+                        <meta name="description" content="Test desc">
+                    </head>
+                    <body>
+                        <h1>Welcome!</h1>
+                    </body>
+                </html>
+            """)
+                        .build()
+        );
+
+        mockServer.start();
+
+        var mockUrl = mockServer.url("/").toString();
+
+        var url = new Url(mockUrl);
+        UrlRepository.save(url);
+
+        Long id = url.getId();
+
+        var savedUrl = UrlRepository.find(id).get().getName();
+        System.out.println("MOCK URL:  " + mockUrl);
+        System.out.println("SAVED URL: " + savedUrl);
+        System.out.println("LENGTH:    " + savedUrl.length());
+
+        JavalinTest.test(app, (server, client) -> {
+            var response = client.post("/urls/" + id + "/checks");
+            assertThat(response.code()).isEqualTo(200);
+            var lastCheck = UrlCheckRepository.getLastUrlCheck(id);
+
+            assertThat(lastCheck).isNotNull();
+            assertThat(lastCheck.getStatusCode()).isEqualTo(200);
+
+            assertThat(lastCheck.getTitle()).isEqualTo("Hello");
+            assertThat(lastCheck.getH1()).isEqualTo("Welcome!");
+            assertThat(lastCheck.getDescription()).isEqualTo("Test desc");
+        });
+        mockServer.close();
     }
 }

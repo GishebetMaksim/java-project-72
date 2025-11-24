@@ -19,7 +19,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for(var url : page.getUrls())
+                        @for (var url : page.getUrls())
                             <tr>
                                 <td>
                                     ${url.getId()}
@@ -28,10 +28,14 @@
                                     <a href="${NamedRoutes.urlPath(url.getId())}">${url.getName()}</a>
                                 </td>
                                 <td>
-
+                                     @if (page.getLatestChecks().get(url.getId()) != null)
+                                        ${page.getLatestChecks().get(url.getId()).getCreatedAt().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))}
+                                     @endif
                                 </td>
                                 <td>
-
+                                    @if (page.getLatestChecks().get(url.getId()) != null)
+                                        ${page.getLatestChecks().get(url.getId()).getStatusCode()}
+                                    @endif
                                 </td>
                             </tr>
                         @endfor
