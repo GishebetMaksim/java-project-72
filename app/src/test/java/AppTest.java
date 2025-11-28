@@ -123,7 +123,7 @@ public class AppTest {
         JavalinTest.test(app, (server, client) -> {
             var response = client.post("/urls/" + id + "/checks");
             assertThat(response.code()).isEqualTo(200);
-            var lastCheck = UrlCheckRepository.getLastUrlCheck(id);
+            var lastCheck = UrlCheckRepository.getLastUrlCheck(id).get();
 
             assertThat(lastCheck).isNotNull();
             assertThat(lastCheck.getStatusCode()).isEqualTo(200);

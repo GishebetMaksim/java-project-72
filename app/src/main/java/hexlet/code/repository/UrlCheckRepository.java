@@ -8,6 +8,10 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+
 
 public class UrlCheckRepository extends BaseRepository {
     public static void save(UrlCheck check) throws SQLException {
@@ -59,7 +63,7 @@ public class UrlCheckRepository extends BaseRepository {
         }
     }
 
-    public static UrlCheck getLastUrlCheck(Long urlID) throws SQLException {
+    public static Optional<UrlCheck> getLastUrlCheck(Long urlID) throws SQLException {
         var sql = "SELECT * FROM url_checks WHERE url_id = ? ORDER BY id DESC LIMIT 1";
 
         try (var conn = dataSource.getConnection();
@@ -84,7 +88,41 @@ public class UrlCheckRepository extends BaseRepository {
             check.setId(id);
             check.setCreatedAt(createdAt);
 
-            return check;
+            return Optional.of(check);
+        }
+    }
+
+    public static Map<Long, UrlCheck> findLatestChecks() throws SQLException {
+        Map<Long, UrlCheck> lastChecks = new HashMap<>();
+        var sql = "SELECT * "
+                + "FROM url_checks "
+                + "WHERE id IN ( "
+                + "    SELECT MAX(id)"
+                + "    FROM url_checks"
+                + "    GROUP BY url_id"
+                + ")";
+
+        try (var conn = dataSource.getConnection();
+            var stmt = conn.prepareStatement(sql)) {
+
+            var resultSet = stmt.executeQuery();
+
+            while (resultSet.next()) {
+                var id = resultSet.getLong("id");
+                var statusCode = resultSet.getInt("status_code");
+                var urlId = resultSet.getLong("url_id");
+                var createdAt = resultSet.getTimestamp("created_at").toLocalDateTime();
+                var title = resultSet.getString("title");
+                var h1 = resultSet.getString("h1");
+                var description = resultSet.getString("description");
+
+                var check = new UrlCheck(statusCode, title, h1, description, urlId);
+                check.setId(id);
+                check.setCreatedAt(createdAt);
+
+                lastChecks.put(urlId, check);
+            }
+            return lastChecks;
         }
     }
 }

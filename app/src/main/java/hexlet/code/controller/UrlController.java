@@ -17,33 +17,35 @@ import org.jsoup.nodes.Element;
 import static io.javalin.rendering.template.TemplateUtil.model;
 
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 
 public class UrlController {
-    public static void create(Context ctx) {
+    public static void create(Context ctx) throws SQLException {
         var name = ctx.formParam("url");
 
+        String normalizedName;
         try {
-            String normalizedName = UrlUtils.normalize(name);
-
-            if (UrlRepository.existsByName(normalizedName)) {
-                ctx.sessionAttribute("flash", "Страница уже существует");
-                ctx.sessionAttribute("flashType", "error");
-            } else {
-                var url = new Url(normalizedName);
-                UrlRepository.save(url);
-                ctx.sessionAttribute("flash", "Страница успешно добавлена");
-                ctx.sessionAttribute("flashType", "success");
-            }
-            ctx.redirect(NamedRoutes.urlsPath());
+            normalizedName = UrlUtils.normalize(name);
         } catch (Exception e) {
             ctx.sessionAttribute("flash", "Некорректный URL");
             ctx.sessionAttribute("flashType", "error");
             ctx.redirect(NamedRoutes.buildUrlPath());
+            return;
         }
+
+        if (UrlRepository.existsByName(normalizedName)) {
+            ctx.sessionAttribute("flash", "Страница уже существует");
+            ctx.sessionAttribute("flashType", "error");
+        } else {
+            var url = new Url(normalizedName);
+            UrlRepository.save(url);
+            ctx.sessionAttribute("flash", "Страница успешно добавлена");
+            ctx.sessionAttribute("flashType", "success");
+        }
+
+        ctx.redirect(NamedRoutes.urlsPath());
     }
 
     public static void build(Context ctx) {
@@ -61,11 +63,7 @@ public class UrlController {
         String flashType = ctx.consumeSessionAttribute("flashType");
 
         List<Url> urls = UrlRepository.getEntities();
-        Map<Long, UrlCheck> latestChecks = new HashMap<>();
-
-        for (var url: urls) {
-            latestChecks.put(url.getId(), UrlCheckRepository.getLastUrlCheck(url.getId()));
-        }
+        Map<Long, UrlCheck> latestChecks = UrlCheckRepository.findLatestChecks();
 
         UrlsPage page = new UrlsPage(urls, latestChecks);
 
@@ -93,35 +91,37 @@ public class UrlController {
 
     public static void check(Context ctx) throws SQLException {
         var urlId = ctx.pathParamAsClass("id", Long.class).get();
-        var urlOptional = UrlRepository.find(urlId);
+        var url = UrlRepository.find(urlId)
+                .orElseThrow(() -> new NotFoundResponse("Entity with id = " + urlId + " not found"));
 
-        if (urlOptional.isEmpty()) {
-            ctx.status(404).result("URL not found");
-            return;
+        try {
+            var urlName = url.getName();
+
+            var response = Unirest.get(urlName).asString();
+
+            var statusCode = response.getStatus();
+            var document = Jsoup.parse(response.getBody());
+
+            Element titleElement = document.selectFirst("title");
+            String title = titleElement != null ? titleElement.text() : "no title";
+
+            Element h1Element = document.selectFirst("h1");
+            String h1 = h1Element != null ? h1Element.text() : "";
+
+            Element metaDescription = document.selectFirst("meta[name=description]");
+            String description = metaDescription != null ? metaDescription.attr("content") : "";
+
+            var check = new UrlCheck(statusCode, title, h1, description, urlId);
+
+            UrlCheckRepository.save(check);
+
+            ctx.sessionAttribute("flash", "Страница успешно проверена");
+            ctx.sessionAttribute("flashType", "success");
+
+        } catch (Exception e) {
+            ctx.sessionAttribute("flash", "Произошла ошибка при проверке страницы");
+            ctx.sessionAttribute("flashType", "error");
         }
-
-        var urlName = urlOptional.get().getName();
-
-        var response = Unirest.get(urlName).asString();
-
-        var statusCode = response.getStatus();
-        var document = Jsoup.parse(response.getBody());
-
-        Element titleElement = document.selectFirst("title");
-        String title = titleElement != null ? titleElement.text() : "no title";
-
-        Element h1Element = document.selectFirst("h1");
-        String h1 = h1Element != null ? h1Element.text() : "";
-
-        Element metaDescription = document.selectFirst("meta[name=description]");
-        String description = metaDescription != null ? metaDescription.attr("content") : "";
-
-        var check = new UrlCheck(statusCode, title, h1, description, urlId);
-
-        UrlCheckRepository.save(check);
-
-        ctx.sessionAttribute("flash", "Страница успешно проверена");
-        ctx.sessionAttribute("flashType", "success");
         ctx.redirect(NamedRoutes.urlPath(urlId));
     }
 }

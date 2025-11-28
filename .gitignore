@@ -1,5 +1,6 @@
 app/.gradle
 app/build/
+app/jte-classes
 !app/gradle/wrapper/gradle-wrapper.jar
 !app/**/src/main/**/build/
 !app/**/src/test/**/build/
